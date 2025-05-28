@@ -4,6 +4,7 @@ import { AuthProvider } from "./src/contexts/AuthContext";
 import { QueueProvider } from "./src/contexts/QueueContext";
 import AppRoutes from "./src/routes/AppRoutes";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import "react-native-gesture-handler";
 
 export default function App() {
   return (

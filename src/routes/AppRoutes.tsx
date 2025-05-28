@@ -7,8 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
-import QueueScreen from "../screens/QueueScreen";
-import AdminScreen from "../screens/AdminScreen";
+import AppDrawer from "../../AppDrawer";
 
 const Stack = createStackNavigator();
 
@@ -20,15 +19,11 @@ export default function AppRoutes() {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          ...TransitionPresets.SlideFromRightIOS, // <--- animação de slide estilo iOS
+          ...TransitionPresets.SlideFromRightIOS,
         }}
       >
         {user ? (
-          user.role === "admin" ? (
-            <Stack.Screen name="Admin" component={AdminScreen} />
-          ) : (
-            <Stack.Screen name="Fila" component={QueueScreen} />
-          )
+          <Stack.Screen name="AppDrawer" component={AppDrawer} />
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
