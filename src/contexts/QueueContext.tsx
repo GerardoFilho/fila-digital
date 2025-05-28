@@ -10,7 +10,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 type PasswordType = "normal" | "prioritary";
 
 interface FilaItem {
-  password: string; // N001 ou P001
+  password: string;
   email: string;
   type: PasswordType;
 }
@@ -21,6 +21,7 @@ interface QueueContextData {
   addPassword: (email: string, type: PasswordType) => void;
   nextPassword: () => void;
   resetQueue: () => void;
+  visibleQueue: (email: string, isAdmin: boolean) => FilaItem[];
 }
 
 const QueueContext = createContext({} as QueueContextData);
@@ -40,6 +41,25 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
       setQueue(parsed);
       if (parsed.length > 0) setCurrentPassword(parsed[0].password);
     }
+  }
+
+  function visibleQueue(email: string, isAdmin: boolean): FilaItem[] {
+    if (isAdmin) return queue;
+
+    if (!currentPassword) return [];
+
+    const currentValue = parseInt(currentPassword.slice(1));
+    const currentPrefix = currentPassword[0];
+
+    return queue.filter((item) => {
+      const itemValue = parseInt(item.password.slice(1));
+      return (
+        item.email === email &&
+        item.type === "normal" &&
+        item.password[0] === currentPrefix &&
+        itemValue <= currentValue
+      );
+    });
   }
 
   async function persistQueue(updatedQueue: FilaItem[]) {
@@ -95,6 +115,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
         addPassword,
         nextPassword,
         resetQueue,
+        visibleQueue,
       }}
     >
       {children}

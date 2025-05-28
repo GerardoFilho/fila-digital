@@ -16,7 +16,6 @@ function CustomDrawerContent({ navigation }: any) {
       <Text style={styles.title}>👤 Perfil</Text>
       <Text style={styles.info}>Nome: {user?.name}</Text>
       <Text style={styles.info}>Email: {user?.email}</Text>
-      <Text style={styles.info}>Tipo: {user?.role}</Text>
 
       <View style={styles.divider} />
       <Button title="Sair" color="#DC2626" onPress={logout} />

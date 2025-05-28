@@ -11,6 +11,8 @@ import {
 import { useQueue } from "../contexts/QueueContext";
 import { useAuth } from "../contexts/AuthContext";
 import Button from "../components/Button";
+import * as Haptics from "expo-haptics";
+import { Audio } from "expo-av";
 
 export default function QueueScreen() {
   const { queue, currentPassword, addPassword } = useQueue();
@@ -85,12 +87,29 @@ export default function QueueScreen() {
   useEffect(() => {
     if (currentPassword === myPassword && myPassword !== null) {
       setShowHighlight(true);
+
+      // Vibração curta e som
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      playSound();
+
       const timeout = setTimeout(() => {
         setShowHighlight(false);
       }, 5000);
+
       return () => clearTimeout(timeout);
     }
   }, [currentPassword, myPassword]);
+
+  async function playSound() {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require("./../../assets/sounds/bell-notification.mp3")
+      );
+      await sound.playAsync();
+    } catch (error) {
+      console.warn("Erro ao tocar som:", error);
+    }
+  }
 
   if (showHighlight && currentPassword === myPassword && myPassword !== null) {
     return (
@@ -124,21 +143,33 @@ export default function QueueScreen() {
         <Text style={styles.guiche}>Guichê 01</Text>
       </Animated.View>
 
-      <View style={[styles.card, styles.lightCard]}>
-        <Text style={styles.sectionTitle}>PREVISÃO EM MINUTOS</Text>
-        <Text style={styles.timer}>4</Text>
-        <Text style={styles.unidade}>Unidade Gomes de Matos</Text>
+      <View style={styles.row}>
+        <View style={[styles.card, styles.lightCard, { flex: 1 }]}>
+          <Text style={styles.sectionTitle}>PREVISÃO DE CHAMADA</Text>
+          <Text style={styles.timer}>4 min</Text>
+        </View>
+
+        <View style={[styles.card, styles.lightCard, { flex: 1 }]}>
+          <Text style={styles.sectionTitle}>MINHA SENHA</Text>
+          <Text style={styles.timer}>{myPassword ?? "--"}</Text>
+          <Text style={styles.unidade}>
+            {myPassword ? "Aguarde..." : "Nenhuma retirada"}
+          </Text>
+        </View>
       </View>
 
       <Text style={styles.sectionTitle}>ÚLTIMAS SENHAS</Text>
       <View style={styles.row}>
         {lastTwo
           .map((item) => (
-            <View key={item.password} style={styles.smallCard}>
+            <View
+              key={item.password}
+              style={[styles.smallCard, styles.lightCard]}
+            >
               <Text style={styles.tipo}>
                 {item.type === "prioritary" ? "Prioridade" : "Normal"}
               </Text>
-              <Text style={styles.password}>{item.password}</Text>
+              <Text style={styles.timer}>{item.password}</Text>
               <Text style={styles.guiche}>Guichê 01</Text>
             </View>
           ))
@@ -184,13 +215,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
     marginVertical: 12,
     color: "#1F2937",
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#EFF6FF",
     width: "100%",
     paddingVertical: 24,
     paddingHorizontal: 16,
@@ -217,7 +248,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   timer: {
-    fontSize: 48,
+    fontSize: 36,
     fontWeight: "bold",
     color: "#1D4ED8",
     marginBottom: 4,
@@ -234,7 +265,7 @@ const styles = StyleSheet.create({
   smallCard: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    paddingVertical: 16,
+    padding: 16,
     borderRadius: 16,
     alignItems: "center",
   },
