@@ -1,5 +1,11 @@
 import axios from "axios";
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -15,6 +21,15 @@ import Button from "../components/Button";
 import * as Haptics from "expo-haptics";
 import { Audio } from "expo-av";
 import { useScheduleTimer } from "../hooks/useScheduleTimer";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
+import { TouchableWithoutFeedback } from "react-native-gesture-handler";
+
+interface UseWebSocketProps {
+  senhaData: SenhaStatus | null;
+  setSenhaData: (data: SenhaStatus) => void;
+  processarAtualizacao: (data: any) => void;
+}
 
 interface SenhaStatus {
   id: number;
@@ -31,16 +46,30 @@ interface SenhaAtual {
   status: string;
 }
 
+interface PosicaoFila {
+  codigo: string;
+  numeroSenha: number;
+  posicaoFila: number;
+  estimativaEsperaMinutos: number;
+}
+
+interface WebSocketMessage {
+  body: string;
+}
+
+interface AtualizacaoFila {
+  senhaAtual: number;
+  proximaSenha?: number;
+  posicoesFila: PosicaoFila[];
+  codigo?: string;
+}
+
 export default function QueueScreen() {
+  const nome = localStorage.getItem("nomeUsuario");
+
   const { queue, currentPassword, addPassword, calledPasswords } = useQueue();
-  const {
-    user,
-    senhaData,
-    senhaAtivaExecute,
-    estadoFila,
-    carregarDados,
-    carregarHistorico,
-  } = useAuth();
+  const { user, senhaData, senhaAtivaExecute, estadoFila, carregarDados } =
+    useAuth();
 
   const { scheduleInfo, tempoRestante, formatarTempo, isChamandoSenha } =
     useScheduleTimer();
@@ -49,6 +78,7 @@ export default function QueueScreen() {
   const [minhaPosicao, setMinhaPosicao] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [senhaStatus, setSenhaStatus] = useState<SenhaStatus | null>(null);
+  const [updateKey, setUpdateKey] = useState(0);
 
   const [senhaNormal, setSenhaNormal] = useState<SenhaAtual | null>(null);
   const [senhaPrioritaria] = useState<SenhaAtual | null>(null);
@@ -62,14 +92,31 @@ export default function QueueScreen() {
 
   const [senhaRetirada, setSenhaRetirada] = useState<string | null>(null);
 
-  // const senhaRetirada = useMemo(() => {
-  //   return queue.find((item) => item.email === user?.email)?.password ?? null;
-  // }, [queue, user?.email]);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [senhaChamada, setSenhaChamada] = useState<string>("");
+
+  const [clicks, setClicks] = useState(0);
+
+  const handlePress = () => {
+    setClicks((prev) => prev + 1);
+  };
+
+  async function playSound() {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require("./../../assets/sounds/bell-notification.mp3")
+      );
+      await sound.playAsync();
+    } catch (error) {
+      console.warn("Erro ao tocar som:", error);
+    }
+  }
   useEffect(() => {
     console.log(senhaRetirada);
     console.log(senhaData);
     console.log(estadoFila);
-  }, [senhaRetirada, senhaData?.codigo]);
+    console.log(senhaChamada, "senhachamada");
+  }, [senhaRetirada, senhaData?.codigo, senhaChamada, estadoFila]);
 
   const senha = senhaData?.codigo || senhaRetirada;
   const current = queue.find((item) => item.password === currentPassword);
@@ -131,22 +178,141 @@ export default function QueueScreen() {
     setModalVisible(false);
   }
 
+  const mostrarOverlayChamada = (senha: string) => {
+    setSenhaChamada(senha);
+    setShowOverlay(true);
+
+    setTimeout(() => {
+      setShowOverlay(false);
+    }, 5000);
+  };
+
+  // useWebSocket({
+  //   senhaData,
+  //   setSenhaData: (data) => setSenhaStatus(data),
+  //   processarAtualizacao: (dados) => {
+  //     // Atualize os dados locais da senha
+  //     console.log("Atualização da fila:", dados);
+  //     if (dados?.id === senhaData?.id) {
+  //       setSenhaStatus(dados);
+  //     }
+  //   },
+  // });
+
+  const processarAtualizacao = useCallback((mensagem: WebSocketMessage) => {
+    try {
+      console.log("Processando mensagem:", mensagem.body);
+      const payload: AtualizacaoFila = JSON.parse(mensagem.body);
+      console.log("Payload processado:", payload);
+
+      if (!payload || !Array.isArray(payload.posicoesFila)) {
+        console.error("Formato de mensagem inválido:", payload);
+        return;
+      }
+
+      if (payload.senhaAtual) {
+        console.log("senha atual", payload);
+        mostrarOverlayChamada(payload.senhaAtual.toString());
+      }
+
+      setSenhaStatus((prev) => {
+        if (!prev) {
+          console.log("Nenhum dado de senha anterior disponível");
+          return null;
+        }
+
+        const minhaSenhaAtualizada = payload.posicoesFila.find(
+          (p: PosicaoFila) => p.codigo === prev.codigo
+        );
+
+        if (!minhaSenhaAtualizada) {
+          console.log("Senha está em atendimento");
+          setMinhaPosicao(null);
+          setEstimativaTempo(null);
+          setUpdateKey((u) => u + 1);
+          return { ...prev, status: "EM_ATENDIMENTO" };
+        }
+
+        console.log("Atualizando posição:", minhaSenhaAtualizada.posicaoFila);
+        setMinhaPosicao(minhaSenhaAtualizada.posicaoFila);
+        setEstimativaTempo(minhaSenhaAtualizada.estimativaEsperaMinutos);
+        setUpdateKey((u) => u + 1);
+
+        return {
+          ...prev,
+          posicaoFila: minhaSenhaAtualizada.posicaoFila,
+          estimativaEsperaMinutos: minhaSenhaAtualizada.estimativaEsperaMinutos,
+        };
+      });
+    } catch (error) {
+      console.error("Erro ao processar atualização:", error);
+      console.error("Mensagem que causou o erro:", mensagem.body);
+    }
+  }, []);
+
+  useEffect(() => {
+    // const { senhaData: senhaDataFromState } = location.state || {};
+
+    console.log(senhaData, "senhaDataFromState");
+
+    if (senhaData?.id) {
+      setSenhaStatus(senhaData);
+      setMinhaPosicao(senhaData?.posicaoFila);
+      setEstimativaTempo(senhaData?.estimativaEsperaMinutos);
+      setLoading(false);
+    } else {
+      if (senhaData?.id !== undefined) {
+        buscarStatusSenha(senhaData.id);
+      }
+    }
+
+    console.log("Iniciando conexão WebSocket...");
+    const socket = new SockJS("http://107.178.213.151:8080/ws");
+    const stompClient = new Client({
+      webSocketFactory: () => socket,
+      onConnect: () => {
+        console.log("Conectado ao WebSocket com sucesso");
+        stompClient.subscribe("/topic/fila/atualizacao", (message) => {
+          console.log("Mensagem recebida:", message.body);
+          processarAtualizacao({ body: message.body });
+        });
+      },
+      onDisconnect: () => {
+        console.log("Desconectado do WebSocket");
+      },
+      onStompError: (frame) => {
+        console.error("Erro no WebSocket:", frame);
+        setTimeout(() => {
+          console.log("Tentando reconectar...");
+          stompClient.activate();
+        }, 5000);
+      },
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+    });
+
+    stompClient.activate();
+
+    return () => {
+      console.log("Desconectando WebSocket...");
+      stompClient.deactivate();
+    };
+  }, [processarAtualizacao]);
+
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     carregarDados();
   }, []);
 
-  useEffect(() => {
-    carregarHistorico();
-    formatarTempo(tempoRestante);
-  }, [formatarTempo(tempoRestante)]);
+  // useEffect(() => {
+  //   carregarHistorico();
+  //   formatarTempo(tempoRestante);
+  // }, [formatarTempo(tempoRestante)]);
 
   useEffect(() => {
-    if (
-      currentPassword === senhaRetirada ||
-      currentPassword === senhaData?.codigo
-    ) {
+    if (senha === senhaChamada) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -164,7 +330,7 @@ export default function QueueScreen() {
     } else {
       pulseAnim.setValue(1);
     }
-  }, [currentPassword, senhaRetirada]);
+  }, [senhaChamada]);
 
   const buscarStatusSenha = async (senhaId: number) => {
     try {
@@ -201,44 +367,21 @@ export default function QueueScreen() {
   useEffect(() => {
     senhaData?.id && buscarStatusSenha(Number(senhaData?.id) || 0);
   }, [senhaData]);
-
   useEffect(() => {
-    if (currentPassword === senhaRetirada && senhaRetirada !== null) {
-      setShowHighlight(true);
+    if (showOverlay) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       playSound();
-
-      const timeout = setTimeout(() => {
-        setShowHighlight(false);
-      }, 5000);
-
-      return () => clearTimeout(timeout);
     }
-  }, [currentPassword, senhaRetirada]);
+  }, [showOverlay]);
 
-  async function playSound() {
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        require("./../../assets/sounds/bell-notification.mp3")
-      );
-      await sound.playAsync();
-    } catch (error) {
-      console.warn("Erro ao tocar som:", error);
-    }
-  }
-
-  if (
-    showHighlight &&
-    currentPassword === senhaRetirada &&
-    senhaRetirada !== null
-  ) {
+  if (showOverlay) {
     return (
-      <View style={styles.centeredContainer}>
+      <View style={styles.centeredContainer} key={updateKey}>
         <Animated.View
           style={[styles.highlightCard, { transform: [{ scale: pulseAnim }] }]}
         >
           <Text style={styles.suaVezTitulo}>Sua vez! Vá para o guichê.</Text>
-          <Text style={styles.password}>{senhaRetirada}</Text>
+          <Text style={styles.password}>{senhaChamada}</Text>
           <Text style={styles.guiche}>Guichê 01</Text>
         </Animated.View>
       </View>
@@ -247,27 +390,33 @@ export default function QueueScreen() {
 
   return (
     <View style={styles.container}>
+      {nome && <Text style={styles.welcomeText}>Bem-vindo(a), {nome}</Text>}
+
       <Text style={styles.sectionTitle}>SENHA ATUAL</Text>
+
       <Animated.View
         style={[
           styles.card,
-          currentPassword === senhaRetirada && {
+          senha === senhaChamada && {
             transform: [{ scale: pulseAnim }],
           },
         ]}
       >
-        <Text style={styles.tipo}>
-          {current?.type === "prioritary" ? "Prioridade" : "Normal"}
-        </Text>
-        <Text style={styles.password}>
-          {estadoFila.historico[estadoFila.historico.length - 1]?.codigo ??
-            "---"}
-        </Text>
+        <TouchableWithoutFeedback onPress={handlePress}>
+          <Text style={styles.tipo}>
+            {current?.type === "prioritary" ? "Prioridade" : "Normal"}
+          </Text>
+          <Text style={styles.password}>
+            {(senhaChamada ||
+              estadoFila.historico[estadoFila.historico.length - 1]?.codigo) ??
+              "---"}
+          </Text>
+        </TouchableWithoutFeedback>
         <Text style={styles.guiche}>Guichê 01</Text>
       </Animated.View>
 
       {/* Contador do Schedule */}
-      {scheduleInfo && scheduleInfo.chamadaAutomaticaAtiva && (
+      {clicks >= 6 && scheduleInfo && scheduleInfo.chamadaAutomaticaAtiva && (
         <div className="schedule-counter">
           <h3>
             {isChamandoSenha
@@ -331,7 +480,7 @@ export default function QueueScreen() {
         ))}
       </View>
 
-      <View style={{ marginTop: 32, width: "100%" }}>
+      <View style={styles.button}>
         <Button
           title="Pegar Nova Senha"
           onPress={() => setModalVisible(true)}
@@ -368,6 +517,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
     padding: 16,
     alignItems: "center",
+    overflow: "scroll",
+  },
+  button: {
+    marginTop: 32,
+    width: "95%",
+    maxWidth: 600,
   },
   sectionTitle: {
     fontSize: 16,
@@ -377,7 +532,8 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#EFF6FF",
-    width: "100%",
+    width: "95%",
+    maxWidth: 600,
     paddingVertical: 24,
     paddingHorizontal: 16,
     borderRadius: 16,
@@ -470,5 +626,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 10,
     width: "80%",
+  },
+  welcomeText: {
+    fontSize: 18,
+    fontWeight: "500",
+    marginBottom: 12,
+    color: "#374151",
   },
 });

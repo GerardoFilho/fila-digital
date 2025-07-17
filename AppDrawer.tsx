@@ -36,7 +36,7 @@ export default function AppDrawer() {
         headerTitleStyle: { fontWeight: "bold" },
       }}
     >
-      {user?.role === "admin" ? (
+      {user?.nome === "GerardoAdmin" ? (
         <Drawer.Screen name="Painel Admin" component={AdminScreen} />
       ) : (
         <Drawer.Screen name="Fila Digital" component={QueueScreen} />

@@ -16,7 +16,6 @@ interface AuthContextData {
   logout: () => Promise<void>;
   senhaAtivaExecute: (data: string) => Promise<void>;
   carregarDados: () => Promise<void>;
-  carregarHistorico: () => Promise<void>;
 }
 
 interface SenhaData {
@@ -145,38 +144,6 @@ export const AuthProvider = ({ children }: any) => {
     }
   };
 
-  const carregarHistorico = async () => {
-    try {
-      // Atualiza o estado para indicar que está carregando
-      setEstadoFila((prev) => ({
-        ...prev,
-        loading: true,
-        error: null,
-      }));
-
-      // Carrega os dados simultaneamente
-      const [historicoData] = await Promise.all([
-        AtendimentoService.getHistoricoSenhas(),
-      ]);
-
-      // Atualiza o estado com os dados carregados
-      setEstadoFila((prev) => ({
-        ...prev,
-        loading: false,
-        historico: historicoData,
-      }));
-    } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-
-      // Caso ocorra um erro, atualiza o estado com a mensagem de erro
-      setEstadoFila((prev) => ({
-        ...prev,
-        loading: false,
-        error: "Erro ao carregar dados. Tente novamente mais tarde.",
-      }));
-    }
-  };
-
   async function register(
     email: string,
     password: string,
@@ -212,7 +179,6 @@ export const AuthProvider = ({ children }: any) => {
         logout,
         senhaAtivaExecute,
         carregarDados,
-        carregarHistorico,
       }}
     >
       {children}

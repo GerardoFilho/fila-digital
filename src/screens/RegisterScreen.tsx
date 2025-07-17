@@ -6,6 +6,7 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
 
 const schema = yup
   .object({
@@ -75,88 +76,92 @@ export default function RegisterScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Cadastro</Text>
+    <LinearGradient
+      colors={["#fff", "#fff", "#fff", "#1125e0"]}
+      style={styles.container}
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Cadastro</Text>
 
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, value } }) => (
-          <Input
-            placeholder="Nome"
-            autoCapitalize="words"
-            value={value}
-            onChangeText={onChange}
-            error={errors.name?.message}
-          />
-        )}
-      />
-      <Controller
-        control={control}
-        name="email"
-        render={({ field: { onChange, value } }) => (
-          <Input
-            placeholder="E-mail"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={value}
-            onChangeText={onChange}
-            error={errors.email?.message}
-          />
-        )}
-      />
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              placeholder="Nome"
+              autoCapitalize="words"
+              value={value}
+              onChangeText={onChange}
+              error={errors.name?.message}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="email"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              placeholder="E-mail"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={value}
+              onChangeText={onChange}
+              error={errors.email?.message}
+            />
+          )}
+        />
 
-      <Controller
-        control={control}
-        name="password"
-        render={({ field: { onChange, value } }) => (
-          <Input
-            placeholder="Senha"
-            secureTextEntry
-            value={value}
-            onChangeText={onChange}
-            error={errors.password?.message}
-          />
-        )}
-      />
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              placeholder="Senha"
+              secureTextEntry
+              value={value}
+              onChangeText={onChange}
+              error={errors.password?.message}
+            />
+          )}
+        />
 
-      <Button
-        title="Cadastrar"
-        onPress={handleSubmit(onSubmit)}
-        loading={loading}
-      />
+        <Button
+          title="Cadastrar"
+          onPress={handleSubmit(onSubmit)}
+          loading={loading}
+        />
 
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Text style={styles.backButton}>Voltar para o Login</Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backButton}>Voltar para o Login</Text>
+        </TouchableOpacity>
 
-      {/* Modal de Sucesso */}
-      <Modal visible={successModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>🎉 Cadastro Realizado!</Text>
-            <Text style={styles.modalText}>Você já pode fazer login.</Text>
-            <Button title="OK" onPress={closeModal} />
+        {/* Modal de Sucesso */}
+        <Modal visible={successModal} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>🎉 Cadastro Realizado!</Text>
+              <Text style={styles.modalText}>Você já pode fazer login.</Text>
+              <Button title="OK" onPress={closeModal} />
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
     justifyContent: "center",
-    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 24,
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 24,
     textAlign: "center",
-    color: "#111827",
+    color: "#3a50d4",
   },
   backButton: {
     marginTop: 16,
