@@ -22,12 +22,14 @@ interface QueueContextData {
   nextPassword: () => void;
   resetQueue: () => void;
   visibleQueue: (email: string, isAdmin: boolean) => FilaItem[];
+  calledPasswords: FilaItem[]; // novo
 }
 
 const QueueContext = createContext({} as QueueContextData);
 
 export const QueueProvider = ({ children }: { children: ReactNode }) => {
   const [queue, setQueue] = useState<FilaItem[]>([]);
+  const [calledPasswords, setCalledPasswords] = useState<FilaItem[]>([]);
   const [currentPassword, setCurrentPassword] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,7 +80,6 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
   }
 
   function addPassword(email: string, type: PasswordType) {
-    // Verifica se já existe senha ativa para esse e-mail
     const exists = queue.find((item) => item.email === email);
     if (exists) return;
 
@@ -95,15 +96,17 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
   function nextPassword() {
     if (queue.length <= 1) return;
 
-    const remainingQueue = queue.slice(1);
+    const [called, ...remainingQueue] = queue;
     setQueue(remainingQueue);
     setCurrentPassword(remainingQueue[0]?.password ?? null);
+    setCalledPasswords((prev) => [...prev, called]);
     persistQueue(remainingQueue);
   }
 
   function resetQueue() {
     setQueue([]);
     setCurrentPassword(null);
+    setCalledPasswords([]);
     AsyncStorage.removeItem("@fila:queue");
   }
 
@@ -116,6 +119,7 @@ export const QueueProvider = ({ children }: { children: ReactNode }) => {
         nextPassword,
         resetQueue,
         visibleQueue,
+        calledPasswords,
       }}
     >
       {children}

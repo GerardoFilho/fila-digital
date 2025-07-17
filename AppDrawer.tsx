@@ -11,11 +11,12 @@ const Drawer = createDrawerNavigator();
 function CustomDrawerContent({ navigation }: any) {
   const { user, logout } = useAuth();
 
+  const nome = localStorage.getItem("nomeUsuario");
+
   return (
     <View style={styles.drawer}>
       <Text style={styles.title}>👤 Perfil</Text>
-      <Text style={styles.info}>Nome: {user?.name}</Text>
-      <Text style={styles.info}>Email: {user?.email}</Text>
+      <Text style={styles.info}>Nome: {nome}</Text>
 
       <View style={styles.divider} />
       <Button title="Sair" color="#DC2626" onPress={logout} />

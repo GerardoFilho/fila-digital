@@ -10,76 +10,151 @@ import { useEffect, useRef, useState } from "react";
 import Button from "../components/Button";
 import { useQueue } from "../contexts/QueueContext";
 import { useAuth } from "../contexts/AuthContext";
+import { AtendimentoService } from "../services/AtendimentoService";
+import * as Haptics from "expo-haptics";
+import { Audio } from "expo-av";
 
 export default function AdminScreen() {
   const { currentPassword, nextPassword, resetQueue, queue } = useQueue();
-  const { user, logout } = useAuth();
+  const { user, logout, estadoFila, carregarDados } = useAuth();
+
+  const nome = localStorage.getItem("nomeUsuario");
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const [displayedPassword, setDisplayedPassword] = useState(currentPassword);
+  const [displayedPassword, setDisplayedPassword] = useState("---");
+
+  // useEffect(() => {
+  //   if (currentPassword !== displayedPassword) {
+  //     Animated.sequence([
+  //       Animated.timing(fadeAnim, {
+  //         toValue: 0,
+  //         duration: 300,
+  //         useNativeDriver: true,
+  //       }),
+  //       Animated.timing(fadeAnim, {
+  //         toValue: 1,
+  //         duration: 300,
+  //         useNativeDriver: true,
+  //       }),
+  //     ]).start(() => {
+  //       setDisplayedPassword(currentPassword);
+  //     });
+  //   }
+  // }, [currentPassword]);
 
   useEffect(() => {
-    if (currentPassword !== displayedPassword) {
+    if (estadoFila) {
       Animated.sequence([
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 300,
+          duration: 200,
           useNativeDriver: true,
         }),
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 300,
+          duration: 200,
           useNativeDriver: true,
         }),
       ]).start(() => {
-        setDisplayedPassword(currentPassword);
+        setDisplayedPassword(estadoFila.senhaNormal?.codigo || "---");
       });
     }
-  }, [currentPassword]);
+  }, [estadoFila]);
 
-  function handleNextPassword() {
-    if (queue.length <= 1) {
-      Alert.alert("Fila vazia", "Não há mais senhas na fila!");
-      return;
+  // function handleNextPassword() {
+  //   if (queue.length <= 1) {
+  //     Alert.alert("Fila vazia", "Não há mais senhas na fila!");
+  //     return;
+  //   }
+  //   nextPassword();
+  // }
+
+  async function playSound() {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require("./../../assets/sounds/bell-notification.mp3")
+      );
+      await sound.playAsync();
+    } catch (error) {
+      console.warn("Erro ao tocar som:", error);
     }
-    nextPassword();
   }
 
-  function handleResetQueue() {
-    Alert.alert("Resetar Fila", "Tem certeza que deseja resetar toda a fila?", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Resetar", onPress: resetQueue, style: "destructive" },
-    ]);
-  }
+  useEffect(() => {
+    carregarDados();
+  }, []);
+
+  const handleNextPassword = async (tipo: string) => {
+    try {
+      await AtendimentoService.chamarProximaSenha(tipo);
+      await carregarDados();
+      playSound();
+    } catch (error) {
+      console.error("Erro ao chamar senha:", error);
+    }
+  };
+
+  const handleDesistencia = async (tipo: string) => {
+    try {
+      if (estadoFila.senhaNormal) {
+        await AtendimentoService.registrarDesistencia(
+          estadoFila.senhaNormal?.codigo
+        );
+        await carregarDados();
+      }
+    } catch (error) {
+      console.error("Erro ao registrar desistência:", error);
+    }
+  };
+
+  const handleAtendido = async (tipo: string) => {
+    try {
+      if (estadoFila.senhaNormal) {
+        await AtendimentoService.registrarAtendimento(
+          estadoFila.senhaNormal?.codigo
+        );
+        await carregarDados();
+      }
+    } catch (error) {
+      console.error("Erro ao registrar atendimento:", error);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {user?.email && (
-        <Text style={styles.welcomeText}>Bem-vindo(a), {user?.name}</Text>
-      )}
+      {nome && <Text style={styles.welcomeText}>Bem-vindo(a), {nome}</Text>}
       <Text style={styles.title}>Painel do Admin</Text>
 
       <Animated.View style={[styles.passwordBox, { opacity: fadeAnim }]}>
-        <Text style={styles.passwordText}>{displayedPassword ?? "---"}</Text>
+        <Text style={styles.passwordText}>
+          {estadoFila.historico[estadoFila.historico.length - 1]?.codigo ??
+            "---"}
+        </Text>
       </Animated.View>
 
-      <Button title="Chamar Próxima Senha" onPress={handleNextPassword} />
-      <Button title="Resetar Fila" onPress={handleResetQueue} />
+      {estadoFila.error && <h1>{estadoFila.error}</h1>}
+
+      <Button
+        title="Chamar Próxima Senha"
+        onPress={() => handleNextPassword("NORMAL")}
+      />
+      <Button title="Desistencia" onPress={() => handleDesistencia("NORMAL")} />
+      <Button title="Atendido" onPress={() => handleAtendido("NORMAL")} />
       <Button title="Sair" onPress={logout} />
 
       <View style={styles.queueContainer}>
-        <Text style={styles.queueTitle}>Fila de Espera:</Text>
+        <Text style={styles.queueTitle}>Últimas senhas chamadas:</Text>
 
         <FlatList
-          data={queue.slice(1)}
+          data={estadoFila.historico.slice(-3)}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item, index }) => (
             <Text style={styles.queueItem}>
-              {index + 1}º - Senha {item.password} | {item.email}
+              Senha {item.codigo} | Horário: {item.horario}
             </Text>
           )}
           ListEmptyComponent={
-            <Text style={styles.emptyQueue}>Nenhuma senha na fila.</Text>
+            <Text style={styles.emptyQueue}>Nenhuma chamada recente.</Text>
           }
         />
       </View>

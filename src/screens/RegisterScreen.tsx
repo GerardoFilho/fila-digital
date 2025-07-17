@@ -4,7 +4,6 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Button from "../components/Button";
 import Input from "../components/Input";
-import { useAuth } from "../contexts/AuthContext";
 import { useNavigation } from "@react-navigation/native";
 import { useState } from "react";
 
@@ -22,8 +21,28 @@ const schema = yup
   })
   .required();
 
+async function registerUser(nome: string) {
+  try {
+    const response = await fetch("http://107.178.213.151:8080/api/usuarios", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ nome }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Erro ao cadastrar");
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+}
+
 export default function RegisterScreen() {
-  const { register } = useAuth();
   const navigation = useNavigation<any>();
   const {
     control,
@@ -35,19 +54,18 @@ export default function RegisterScreen() {
 
   const [loading, setLoading] = useState(false);
   const [successModal, setSuccessModal] = useState(false);
-  const [name, setName] = useState("");
 
   async function onSubmit(data: any) {
     try {
       setLoading(true);
-      await register(data.email, data.password, data.name);
+      await registerUser(data.name);
       setTimeout(() => {
         setLoading(false);
         setSuccessModal(true);
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false);
-      alert("Erro ao cadastrar");
+      alert(error.message || "Erro ao cadastrar");
     }
   }
 

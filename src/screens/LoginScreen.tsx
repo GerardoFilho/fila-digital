@@ -17,7 +17,7 @@ export default function LoginScreen() {
   async function onSubmit(data: any) {
     try {
       setLoading(true);
-      await login(data.email, data.password);
+      await login(data.email);
     } catch (err) {
       setErrorModal(true);
     } finally {
