@@ -8,11 +8,16 @@ import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import AppDrawer from "../../AppDrawer";
+import { useEffect } from "react";
 
 const Stack = createStackNavigator();
 
 export default function AppRoutes() {
   const { user } = useAuth();
+
+  useEffect(() => {
+    console.log(user, "USER");
+  }, [user]);
 
   return (
     <NavigationContainer>

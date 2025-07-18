@@ -78,6 +78,7 @@ export const AuthProvider = ({ children }: any) => {
   });
 
   async function senhaAtivaExecute(id: string) {
+    console.log("Executando senhaAtivaExecute com ID:", id);
     const senhaResponse = await fetch(
       `http://107.178.213.151:8080/api/senhas/ativa?usuarioId=${id}`
     );
@@ -89,6 +90,7 @@ export const AuthProvider = ({ children }: any) => {
     }
   }
   async function login(email: string) {
+    console.log("Iniciando login com email:", email);
     const response = await fetch(
       `http://107.178.213.151:8080/api/usuarios?nome=${encodeURIComponent(
         email
@@ -96,16 +98,19 @@ export const AuthProvider = ({ children }: any) => {
     );
 
     if (!response.ok) {
+      console.log("RESPONSE ERRO", response);
+
       throw new Error("Usuário não encontrado");
     }
 
     const data = await response.json();
     setUser(data);
-    localStorage.setItem("usuarioId", data.id);
-    localStorage.setItem("nomeUsuario", data.nome);
+    await AsyncStorage.setItem("usuarioId", `${data.id}`);
+    await AsyncStorage.setItem("nomeUsuario", data.nome);
 
     // Verifica se já possui senha ativa
     senhaAtivaExecute(data.id);
+    return data;
   }
 
   const carregarDados = async () => {
@@ -166,6 +171,15 @@ export const AuthProvider = ({ children }: any) => {
   async function logout() {
     setUser(null);
     setSenhaData(null);
+
+    setEstadoFila({
+      loading: true,
+      senhaNormal: null,
+      senhaPrioritaria: null,
+      infoFila: null,
+      historico: [],
+      error: null,
+    });
   }
 
   return (

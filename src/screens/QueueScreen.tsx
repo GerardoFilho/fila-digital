@@ -65,8 +65,6 @@ interface AtualizacaoFila {
 }
 
 export default function QueueScreen() {
-  const nome = localStorage.getItem("nomeUsuario");
-
   const { queue, currentPassword, addPassword, calledPasswords } = useQueue();
   const { user, senhaData, senhaAtivaExecute, estadoFila, carregarDados } =
     useAuth();
@@ -111,12 +109,6 @@ export default function QueueScreen() {
       console.warn("Erro ao tocar som:", error);
     }
   }
-  useEffect(() => {
-    console.log(senhaRetirada);
-    console.log(senhaData);
-    console.log(estadoFila);
-    console.log(senhaChamada, "senhachamada");
-  }, [senhaRetirada, senhaData?.codigo, senhaChamada, estadoFila]);
 
   const senha = senhaData?.codigo || senhaRetirada;
   const current = queue.find((item) => item.password === currentPassword);
@@ -124,9 +116,9 @@ export default function QueueScreen() {
   const lastTwo = estadoFila.historico.slice(-2);
 
   async function handleChooseType(type: "NORMAL" | "PRIORITARIO") {
-    const usuarioId = localStorage.getItem("usuarioId");
+    const usuarioId = user?.id;
 
-    if (!usuarioId) {
+    if (!user?.id) {
       Alert.alert("Erro", "Usuário não identificado.");
       return;
     }
@@ -159,7 +151,13 @@ export default function QueueScreen() {
 
       if (response.ok) {
         if (user) {
-          senhaAtivaExecute(usuarioId);
+          if (usuarioId) {
+            senhaAtivaExecute(user?.id);
+          } else {
+            console.error(
+              "usuarioId is undefined, cannot execute senhaAtivaExecute."
+            );
+          }
         } else {
           console.error("User is undefined, cannot execute senhaAtivaExecute.");
         }
@@ -181,23 +179,12 @@ export default function QueueScreen() {
   const mostrarOverlayChamada = (senha: string) => {
     setSenhaChamada(senha);
     setShowOverlay(true);
+    carregarDados();
 
     setTimeout(() => {
       setShowOverlay(false);
     }, 5000);
   };
-
-  // useWebSocket({
-  //   senhaData,
-  //   setSenhaData: (data) => setSenhaStatus(data),
-  //   processarAtualizacao: (dados) => {
-  //     // Atualize os dados locais da senha
-  //     console.log("Atualização da fila:", dados);
-  //     if (dados?.id === senhaData?.id) {
-  //       setSenhaStatus(dados);
-  //     }
-  //   },
-  // });
 
   const processarAtualizacao = useCallback((mensagem: WebSocketMessage) => {
     try {
@@ -251,10 +238,6 @@ export default function QueueScreen() {
   }, []);
 
   useEffect(() => {
-    // const { senhaData: senhaDataFromState } = location.state || {};
-
-    console.log(senhaData, "senhaDataFromState");
-
     if (senhaData?.id) {
       setSenhaStatus(senhaData);
       setMinhaPosicao(senhaData?.posicaoFila);
@@ -272,7 +255,7 @@ export default function QueueScreen() {
       webSocketFactory: () => socket,
       onConnect: () => {
         console.log("Conectado ao WebSocket com sucesso");
-        stompClient.subscribe("/topic/fila/atualizacao", (message) => {
+        stompClient.subscribe("/topic/fila/atualizacao", (message: any) => {
           console.log("Mensagem recebida:", message.body);
           processarAtualizacao({ body: message.body });
         });
@@ -280,7 +263,7 @@ export default function QueueScreen() {
       onDisconnect: () => {
         console.log("Desconectado do WebSocket");
       },
-      onStompError: (frame) => {
+      onStompError: (frame: any) => {
         console.error("Erro no WebSocket:", frame);
         setTimeout(() => {
           console.log("Tentando reconectar...");
@@ -304,7 +287,7 @@ export default function QueueScreen() {
 
   useEffect(() => {
     carregarDados();
-  }, []);
+  }, [senhaChamada]);
 
   // useEffect(() => {
   //   carregarHistorico();
@@ -374,7 +357,7 @@ export default function QueueScreen() {
     }
   }, [showOverlay]);
 
-  if (showOverlay) {
+  if (showOverlay && senha === senhaChamada) {
     return (
       <View style={styles.centeredContainer} key={updateKey}>
         <Animated.View
@@ -390,7 +373,9 @@ export default function QueueScreen() {
 
   return (
     <View style={styles.container}>
-      {nome && <Text style={styles.welcomeText}>Bem-vindo(a), {nome}</Text>}
+      {user?.nome && (
+        <Text style={styles.welcomeText}>Bem-vindo(a), {user?.nome}</Text>
+      )}
 
       <Text style={styles.sectionTitle}>SENHA ATUAL</Text>
 
@@ -407,45 +392,52 @@ export default function QueueScreen() {
             {current?.type === "prioritary" ? "Prioridade" : "Normal"}
           </Text>
           <Text style={styles.password}>
-            {(senhaChamada ||
-              estadoFila.historico[estadoFila.historico.length - 1]?.codigo) ??
-              "---"}
+            {(senhaChamada
+              ? senhaChamada
+              : estadoFila.historico[estadoFila.historico.length - 1]
+                  ?.codigo) || "---"}
           </Text>
         </TouchableWithoutFeedback>
         <Text style={styles.guiche}>Guichê 01</Text>
       </Animated.View>
 
       {/* Contador do Schedule */}
-      {clicks >= 6 && scheduleInfo && scheduleInfo.chamadaAutomaticaAtiva && (
-        <div className="schedule-counter">
-          <h3>
+      {clicks >= 6 && scheduleInfo && scheduleInfo?.chamadaAutomaticaAtiva && (
+        <View style={styles.scheduleCounter}>
+          <Text style={styles.scheduleTitle}>
             {isChamandoSenha
               ? "Chamando próxima senha..."
               : "Próxima chamada automática em:"}
-          </h3>
-          <div className="countdown-timer">
-            <span
-              className={`timer-value ${isChamandoSenha ? "chamando" : ""}`}
+          </Text>
+
+          <View style={styles.countdownTimer}>
+            <Text
+              style={[styles.timerValue, isChamandoSenha && styles.chamando]}
             >
               {isChamandoSenha ? "00:00" : formatarTempo(tempoRestante)}
-            </span>
-          </div>
-          <p className="schedule-info">
+            </Text>
+          </View>
+
+          <Text style={styles.scheduleInfo}>
             {scheduleInfo.senhasAguardando} senha(s) aguardando atendimento
-          </p>
+          </Text>
+
           {isChamandoSenha && (
-            <p className="chamada-status">
+            <Text style={styles.chamadaStatus}>
               ⏳ Processando chamada automática...
-            </p>
+            </Text>
           )}
-        </div>
+        </View>
       )}
 
       <View style={styles.row}>
         <View style={[styles.card, styles.lightCard, { flex: 1 }]}>
           <Text style={styles.sectionTitle}>PREVISÃO DE CHAMADA</Text>
           <Text style={styles.timer}>
-            {estimativaTempo || senhaData?.estimativaEsperaMinutos || "--"} min
+            {(estimativaTempo
+              ? estimativaTempo
+              : senhaData?.estimativaEsperaMinutos) || "--"}
+            min
           </Text>
         </View>
 
@@ -458,7 +450,9 @@ export default function QueueScreen() {
             {carregandoSenha
               ? "Carregando..."
               : senhaData?.codigo
-              ? `Posição na fila: ${senhaData?.posicaoFila}`
+              ? `Posição na fila: ${
+                  (minhaPosicao ? minhaPosicao : senhaData?.posicaoFila) || "--"
+                }`
               : "Nenhuma retirada"}
           </Text>
         </View>
@@ -547,6 +541,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#1D4ED8",
     fontWeight: "600",
+    textAlign: "center",
   },
   password: {
     fontSize: 56,
@@ -632,5 +627,45 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginBottom: 12,
     color: "#374151",
+  },
+  scheduleCounter: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: "#E0F2FE",
+    borderRadius: 12,
+    width: "90%",
+    alignItems: "center",
+  },
+
+  scheduleTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#1E3A8A",
+  },
+
+  countdownTimer: {
+    marginBottom: 8,
+  },
+
+  timerValue: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#1E40AF",
+  },
+
+  chamando: {
+    color: "#DC2626",
+  },
+
+  scheduleInfo: {
+    fontSize: 14,
+    color: "#1E3A8A",
+  },
+
+  chamadaStatus: {
+    fontSize: 14,
+    color: "#1E40AF",
+    marginTop: 4,
   },
 });

@@ -31,65 +31,6 @@ export default function LoginScreen() {
   }
 
   return (
-    // <View style={styles.container}>
-    //   <Text style={styles.title}>Login</Text>
-
-    //   <Controller
-    //     control={control}
-    //     name="email"
-    //     render={({ field: { onChange, value } }) => (
-    //       <Input
-    //         placeholder="Usuário"
-    //         autoCapitalize="none"
-    //         keyboardType="email-address"
-    //         value={value}
-    //         onChangeText={onChange}
-    //       />
-    //     )}
-    //   />
-
-    // <Controller
-    //   control={control}
-    //   name="password"
-    //   render={({ field: { onChange, value } }) => (
-    //     <Input
-    //       placeholder="Senha"
-    //       secureTextEntry
-    //       value={value}
-    //       onChangeText={onChange}
-    //     />
-    //   )}
-    // />
-
-    //   <Button
-    //     title="Entrar"
-    //     onPress={handleSubmit(onSubmit)}
-    //     loading={loading}
-    //   />
-
-    //   <TouchableOpacity onPress={() => navigation.navigate("Cadastro")}>
-    //     <Text style={styles.linkText}>Ainda não tem conta? Cadastre-se</Text>
-    //   </TouchableOpacity>
-
-    //   <TouchableOpacity onPress={() => navigation.navigate("EsqueciSenha")}>
-    //     <Text style={styles.linkText}>Esqueci minha senha</Text>
-    //   </TouchableOpacity>
-
-    // {/* Modal de erro */}
-    // <Modal visible={errorModal} animationType="fade" transparent>
-    //   <View style={styles.modalOverlay}>
-    //     <View style={styles.modalContent}>
-    //       <Text style={styles.modalTitle}>Erro no login</Text>
-    //       <Text style={styles.modalText}>E-mail ou senha inválidos.</Text>
-    //       <Button
-    //         title="Tentar novamente"
-    //         onPress={() => setErrorModal(false)}
-    //       />
-    //     </View>
-    //   </View>
-    // </Modal>
-    // </View>
-
     <LinearGradient
       colors={["#fff", "#fff", "#fff", "#1125e0"]}
       style={styles.container}
@@ -105,20 +46,6 @@ export default function LoginScreen() {
         <Text style={styles.subtitle}>
           Insira seus dados para utilizar o sistema de senhas
         </Text>
-
-        {/* <View style={styles.inputContainer}>
-          <Ionicons
-            name="person-outline"
-            size={20}
-            color="#3a50d4"
-            style={styles.icon}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Email ou telefone"
-            placeholderTextColor="#999"
-          />
-        </View> */}
         <Controller
           control={control}
           name="email"
@@ -132,7 +59,7 @@ export default function LoginScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Email ou telefone"
+                placeholder="Usuário"
                 placeholderTextColor="#999"
                 autoCapitalize="none"
                 keyboardType="email-address"
@@ -186,7 +113,7 @@ export default function LoginScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Erro no login</Text>
-              <Text style={styles.modalText}>E-mail ou senha inválidos.</Text>
+              <Text style={styles.modalText}>Usuário ou senha inválidos.</Text>
               <Button
                 title="Tentar novamente"
                 onPress={() => setErrorModal(false)}

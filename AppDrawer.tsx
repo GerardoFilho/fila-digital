@@ -1,5 +1,4 @@
 // src/AppDrawer.tsx
-import React from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { View, Text, Button, StyleSheet } from "react-native";
 import { useAuth } from "./src/contexts/AuthContext";
@@ -11,12 +10,12 @@ const Drawer = createDrawerNavigator();
 function CustomDrawerContent({ navigation }: any) {
   const { user, logout } = useAuth();
 
-  const nome = localStorage.getItem("nomeUsuario");
+  if (!user) return null;
 
   return (
     <View style={styles.drawer}>
       <Text style={styles.title}>👤 Perfil</Text>
-      <Text style={styles.info}>Nome: {nome}</Text>
+      <Text style={styles.info}>Nome: {user?.nome}</Text>
 
       <View style={styles.divider} />
       <Button title="Sair" color="#DC2626" onPress={logout} />
@@ -26,6 +25,8 @@ function CustomDrawerContent({ navigation }: any) {
 
 export default function AppDrawer() {
   const { user } = useAuth();
+
+  if (!user) return null;
 
   return (
     <Drawer.Navigator
