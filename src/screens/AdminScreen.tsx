@@ -19,6 +19,10 @@ export default function AdminScreen() {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [displayedPassword, setDisplayedPassword] = useState("---");
 
+  const historicoFila = [...estadoFila.historico].sort((a, b) => {
+    return a.horario.localeCompare(b.horario);
+  });
+
   useEffect(() => {
     if (estadoFila) {
       Animated.sequence([
@@ -103,8 +107,7 @@ export default function AdminScreen() {
 
       <Animated.View style={[styles.passwordBox, { opacity: fadeAnim }]}>
         <Text style={styles.passwordText}>
-          {estadoFila.historico[estadoFila.historico.length - 1]?.codigo ??
-            "---"}
+          {historicoFila[historicoFila.length - 1]?.codigo ?? "---"}
         </Text>
       </Animated.View>
 
@@ -122,7 +125,7 @@ export default function AdminScreen() {
         <Text style={styles.queueTitle}>Últimas senhas chamadas:</Text>
 
         <FlatList
-          data={estadoFila.historico.slice(-6)}
+          data={historicoFila.slice(-6)}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item, index }) => (
             <Text style={styles.queueItem}>

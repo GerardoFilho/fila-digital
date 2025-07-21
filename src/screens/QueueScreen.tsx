@@ -110,13 +110,18 @@ export default function QueueScreen() {
     }
   }
 
+  const historicoFila = [...estadoFila.historico].sort((a, b) => {
+    return a.horario.localeCompare(b.horario);
+  });
+
   const senha = senhaData?.codigo || senhaRetirada;
   const current = queue.find((item) => item.password === currentPassword);
 
-  const lastTwo = estadoFila.historico.slice(-2);
+  const lastTwo = historicoFila.slice(-2);
 
   async function handleChooseType(type: "NORMAL" | "PRIORITARIO") {
     const usuarioId = user?.id;
+    console.log(lastTwo);
 
     if (!user?.id) {
       Alert.alert("Erro", "Usuário não identificado.");
@@ -436,7 +441,7 @@ export default function QueueScreen() {
           <Text style={styles.timer}>
             {(estimativaTempo
               ? estimativaTempo
-              : senhaData?.estimativaEsperaMinutos) || "--"}
+              : senhaData?.estimativaEsperaMinutos) || "--"}{" "}
             min
           </Text>
         </View>
