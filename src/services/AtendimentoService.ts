@@ -28,7 +28,7 @@ interface ScheduleInfo {
 export const AtendimentoService = {
     async chamarProximaSenha(tipo: string): Promise<void> {
         try {
-            await axios.post('http://107.178.213.151:8080/api/atendimento/proxima', { tipo });
+            await axios.post('http://34.133.85.233:8080/api/atendimento/proxima', { tipo });
         } catch (error) {
             console.error('Erro ao chamar próxima senha:', error);
             throw error;
@@ -37,7 +37,7 @@ export const AtendimentoService = {
 
     async registrarDesistencia(codigo: string): Promise<void> {
         try {
-            await axios.post(`http://107.178.213.151:8080/api/atendimento/${codigo}/desistencia`);
+            await axios.post(`http://34.133.85.233:8080/api/atendimento/${codigo}/desistencia`);
         } catch (error) {
             console.error('Erro ao registrar desistência:', error);
             throw error;
@@ -46,7 +46,7 @@ export const AtendimentoService = {
 
     async registrarAtendimento(codigo: string): Promise<void> {
         try {
-            await axios.post(`http://107.178.213.151:8080/api/atendimento/${codigo}/finalizar`);
+            await axios.post(`http://34.133.85.233:8080/api/atendimento/${codigo}/finalizar`);
         } catch (error) {
             console.error('Erro ao registrar atendimento:', error);
             throw error;
@@ -55,7 +55,7 @@ export const AtendimentoService = {
 
     async getSenhaAtual(): Promise<SenhaAtual> {
         try {
-            const response = await axios.get(`http://107.178.213.151:8080/api/atendimento/atual`);
+            const response = await axios.get(`http://34.133.85.233:8080/api/atendimento/atual`);
             return response.data;
         } catch (error) {
             console.error('Erro ao buscar senha atual:', error);
@@ -65,7 +65,7 @@ export const AtendimentoService = {
 
     async getHistoricoSenhas(): Promise<HistoricoSenha[]> {
         try {
-            const response = await axios.get('http://107.178.213.151:8080/api/atendimento/historico');
+            const response = await axios.get('http://34.133.85.233:8080/api/atendimento/historico');
             return response.data;
         } catch (error) {
             console.error('Erro ao buscar histórico de senhas:', error);
@@ -75,7 +75,7 @@ export const AtendimentoService = {
 
     async getInfoFila(): Promise<InfoFila> {
         try {
-            const response = await axios.get('http://107.178.213.151:8080/api/atendimento/fila/info');
+            const response = await axios.get('http://34.133.85.233:8080/api/atendimento/fila/info');
             return response.data;
         } catch (error) {
             console.error('Erro ao buscar informações da fila:', error);
@@ -85,7 +85,7 @@ export const AtendimentoService = {
 
     async getScheduleInfo(): Promise<ScheduleInfo> {
         try {
-            const response = await axios.get('http://107.178.213.151:8080/api/atendimento/schedule/info');
+            const response = await axios.get('http://34.133.85.233:8080/api/atendimento/schedule/info');
             return response.data;
         } catch (error) {
             console.error('Erro ao buscar informações do schedule:', error);

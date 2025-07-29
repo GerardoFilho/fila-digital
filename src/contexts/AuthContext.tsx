@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: any) => {
   async function senhaAtivaExecute(id: string) {
     console.log("Executando senhaAtivaExecute com ID:", id);
     const senhaResponse = await fetch(
-      `http://107.178.213.151:8080/api/senhas/ativa?usuarioId=${id}`
+      `http://34.133.85.233:8080/api/senhas/ativa?usuarioId=${id}`
     );
 
     if (senhaResponse.status === 200) {
@@ -92,9 +92,7 @@ export const AuthProvider = ({ children }: any) => {
   async function login(email: string) {
     console.log("Iniciando login com email:", email);
     const response = await fetch(
-      `http://107.178.213.151:8080/api/usuarios?nome=${encodeURIComponent(
-        email
-      )}`
+      `http://34.133.85.233:8080/api/usuarios?nome=${encodeURIComponent(email)}`
     );
 
     if (!response.ok) {

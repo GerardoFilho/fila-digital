@@ -24,7 +24,7 @@ const schema = yup
 
 async function registerUser(nome: string) {
   try {
-    const response = await fetch("http://107.178.213.151:8080/api/usuarios", {
+    const response = await fetch("http://34.133.85.233:8080/api/usuarios", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

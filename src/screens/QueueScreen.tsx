@@ -144,7 +144,7 @@ export default function QueueScreen() {
 
     try {
       const response = await fetch(
-        "http://107.178.213.151:8080/api/senhas/retirar",
+        "http://34.133.85.233:8080/api/senhas/retirar",
         {
           method: "POST",
           headers: {
@@ -255,7 +255,7 @@ export default function QueueScreen() {
     }
 
     console.log("Iniciando conexão WebSocket...");
-    const socket = new SockJS("http://107.178.213.151:8080/ws");
+    const socket = new SockJS("http://34.133.85.233:8080/ws");
     const stompClient = new Client({
       webSocketFactory: () => socket,
       onConnect: () => {
@@ -324,7 +324,7 @@ export default function QueueScreen() {
     try {
       console.log("Buscando status da senha:", senhaId);
       const response = await axios.get(
-        `http://107.178.213.151:8080/api/senhas/${senhaId}/status`
+        `http://34.133.85.233:8080/api/senhas/${senhaId}/status`
       );
       console.log("Resposta do status:", response.data);
 
